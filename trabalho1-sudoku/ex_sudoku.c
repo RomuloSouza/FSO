@@ -23,15 +23,17 @@ int main(){
 
     char caminho[] = "0.txt";
 
+    printf("----------------------------------------\n");
     for (int i = 0; i < 10; i++){
-
+        
+        // Abre o arquivo do caminho indicado
         if (i == 9){
             printf("Arquivo = 10.txt");
             if(!(arquivo = fopen("10.txt","r"))){
                 printf("Não foi possível abrir o arquivo");
                 exit(EXIT_FAILURE);
             }
-        }else {
+        } else {
             caminho[0] = (i+1) + '0';
             printf("Arquivo = %s\n", caminho);
 
@@ -44,8 +46,9 @@ int main(){
         int l = 0;
         int c = 0;
         int a;
-        while (fscanf(arquivo,"%d",&a) != EOF){
 
+        // Lê a matriz sudoku do arquivo indicado
+        while (fscanf(arquivo,"%d",&a) != EOF){
             sudoku[l][c] = a;
             c++;
 
@@ -55,8 +58,8 @@ int main(){
             }
         }
 
-        printf("\nSudoku %d:\n", i+1  );
-
+        // Imprime todo o sudoku lido 
+        printf("\nSudoku %d:\n", i+1);
         for (int m = 0; m < 9; m++){
             for (int n = 0; n < 9; n++){
                 printf("%d ",sudoku[m][n]);
@@ -64,7 +67,7 @@ int main(){
             printf("\n");
         }
 
-        printf("Erros:\n");
+        printf("\nErros:\n");
 
         if(pthread_create(&tid[0],NULL,valida_colunas,NULL) != 0){
             printf("Erro na criação da nova thread.\n");
@@ -77,7 +80,10 @@ int main(){
         }
 
         int aux = 0;
-        int posicao[10];
+        int posicao[10]; // Vetor criado para enviar parâmetros para diferentes threads
+        
+        // Cria 9 threads, passando a posição equivalente à primeira
+        // posição da submatriz 3x3
         for(int j = 0; j < 25; j+=3){
             posicao[aux] = j;
             if(pthread_create(&tid[aux+2],NULL,valida_sub_sudokus,&posicao[aux]) != 0){
@@ -99,10 +105,9 @@ int main(){
         } else {
             printf("\nConclusão: Sudoku Inválido!\n");
         }
-        printf("\n");
+        printf("----------------------------------------\n");
 
         fclose(arquivo);
-
     }
 
     pthread_mutex_destroy(&lock);
@@ -110,15 +115,15 @@ int main(){
     return 0;
 }
 
+// Percorre todas as colunas da matriz sudoku e valida
 void *valida_colunas (void *args){
-
-
     for(int i = 0; i < 9; i++){
         int arr[10] = {0};
 
         for(int j = 0; j < 9; j++){
             arr[sudoku[j][i]]++;
             if(arr[sudoku[j][i]] > 1){
+                // Entra se houver um elemento repetido na coluna
                 pthread_mutex_lock(&lock);
                 validade_sudoku = 0;
 
@@ -134,14 +139,15 @@ void *valida_colunas (void *args){
     pthread_exit(NULL);
 }
 
+// Percorre todas as linhas da matriz sudoku e valida
 void *valida_linhas (void *args){
-
     for(int i = 0; i < 9; i++){
         int arr[10] = {0};
 
         for(int j = 0; j < 9; j++){
             arr[sudoku[i][j]]++;
-            if(arr[sudoku[i][j]] > 1){
+            if(arr[sudoku[i][j]] > 1){ 
+                // Entra se houver um elemento repetido na linha
                 pthread_mutex_lock(&lock);
                 validade_sudoku = 0;
                 printf("- Inválido por valida_linhas\n");
@@ -155,12 +161,11 @@ void *valida_linhas (void *args){
     pthread_exit(NULL);
 }
 
+// Recebe 1 posição, valida a matriz 3x3 a partir daquela posição
 void *valida_sub_sudokus (void *args){
     int col = *(int*)args;
     int linha = 0;
     int arr[10] = {0};
-
-    // printf("col antes = %d\n", col);
 
     if(col >= 18){
         col -= 18;
@@ -170,22 +175,19 @@ void *valida_sub_sudokus (void *args){
         linha = 3;
     }
 
-    // printf("col depois = %d\n", col);
     int col_inicio = col;
     int linha_inicio = linha;
-
     for( int i = linha; i < linha+3; i++){
         for (int j = col; j < col+3; j++){
             arr[sudoku[i][j]]++;
-            // printf("linhas = %d col = %d\n",linha,col);
             if(arr[sudoku[i][j]] > 1){
+                // Entra se houver um elemento repetido na submatriz 3x3
                 pthread_mutex_lock(&lock);
                 validade_sudoku = 0;
 
                 printf("- Inválido por valida_sub_sudokus\n");
                 printf("    sub sudoku começa em (%d,%d) e termina em (%d,%d)\n",
-                linha_inicio,col_inicio, linha_inicio+2, col_inicio+2);
-                // printf("linhas = %d col = %d\n",i,j);
+                    linha_inicio,col_inicio, linha_inicio+2, col_inicio+2);
 
                 pthread_mutex_unlock(&lock);
                 pthread_exit(NULL);
